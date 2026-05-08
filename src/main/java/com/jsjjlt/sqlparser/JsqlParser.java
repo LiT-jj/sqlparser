@@ -26,8 +26,6 @@ import java.util.*;
 public class JsqlParser {
     private static final org.apache.logging.log4j.Logger logger =
             org.apache.logging.log4j.LogManager.getLogger(JsqlParser.class);
-    private interface RefTabPrintMixin {}
-    private interface RefColPrintMixin {}
     private static class ParseSession {
         final DerivedAliasRegistry derivedAliasRegistry;
         final SelectWalker selectWalker;
@@ -75,7 +73,7 @@ public class JsqlParser {
         SQLContext finalContext = result.getContext();
         try {
             Statements statements = CCJSqlParserUtil.parseStatements(sql);
-            for (Statement statement : statements.getStatements()) {
+            for (Statement statement : statements) {
                 try {
                     SQLContext context = convertStatement(statement, session);
                     if (context != null) {

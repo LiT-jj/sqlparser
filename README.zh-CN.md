@@ -41,6 +41,63 @@
 - `com.jsjjlt.sqlparser.range`
   - 各类范围模型实现
 
+### 目录结构
+
+```text
+sqlparser/
+├─ pom.xml
+├─ README.md
+├─ README.zh-CN.md
+└─ src/
+   ├─ main/
+   │  └─ java/
+   │     ├─ com/jsjjlt/sqlparser/
+   │     │  ├─ JsqlParser.java
+   │     │  ├─ ParseResult.java
+   │     │  ├─ ParseError.java
+   │     │  ├─ ParseException.java
+   │     │  ├─ core/
+   │     │  │  ├─ SelectWalker.java
+   │     │  │  ├─ ColumnResolver.java
+   │     │  │  ├─ DerivedAliasRegistry.java
+   │     │  │  └─ ConstraintExtractor.java
+   │     │  ├─ entity/
+   │     │  ├─ constraint/
+   │     │  ├─ range/
+   │     │  └─ utils/
+   │     └─ Test.java
+   └─ test/
+      └─ java/
+         └─ com/jsjjlt/sqlparser/
+            └─ JsqlParserTest.java
+```
+
+## 设计思路
+
+### 高层流程
+
+1. 使用 JSqlParser 将 SQL 拆分为 statements。
+2. 逐条遍历 statement，构建并合并 `SQLContext`。
+3. 完成表/字段归属解析与约束提取。
+4. 返回 `ParseResult(context, errors)`；strict 模式下有错即抛异常。
+
+### 架构设计原因
+
+- `JsqlParser` 负责编排流程（入口 + 过程控制）。
+- `ParseSession` 持有“单次解析”状态，保证解析器服务在多次调用间无共享可变状态。
+- `core` 下按职责拆分：
+  - `SelectWalker`：join/on 遍历细节
+  - `ColumnResolver`：字段 key 归一化
+  - `DerivedAliasRegistry`：派生别名与来源状态管理
+  - `ConstraintExtractor`：表达式类型判断
+
+### 状态与副作用原则
+
+- `JsqlParser` 不保留跨请求可变状态。
+- 解析过程中的可变状态限制在 `ParseSession`。
+- 领域对象（`SQLContext`、`RefTab`、`RefCol`）采用字段封装，并通过显式入口（`add*`、`merge`、`repairColumn`）变更。
+- 错误通过 `ParseResult.errors` 显式暴露；strict 模式将错误提升为异常。
+
 ## 快速开始
 
 ```java
@@ -59,6 +116,58 @@ if (result.hasErrors()) {
 
 // 严格模式：只要有错误就抛 ParseException
 SQLContext strictCtx = parser.getSQLContext("select * from t1", true);
+```
+
+## API 用法总览
+
+当前所有对外公开入口如下：
+
+- `SQLContext getSQLContext(String sql)`
+  - 尽力解析（best effort）
+  - 兼容旧调用方式
+  - 返回值仅包含 `SQLContext`
+
+- `SQLContext getSQLContext(String sql, boolean strict)`
+  - `strict=false`：行为与 `getSQLContext(sql)` 一致
+  - `strict=true`：只要出现解析错误就抛 `ParseException`
+
+- `ParseResult parse(String sql)`
+  - 尽力解析
+  - 返回 `context + errors`
+
+- `ParseResult parse(String sql, boolean strict)`
+  - `strict=false`：返回 `ParseResult`
+  - `strict=true`：若存在错误，抛 `ParseException`
+
+### ParseResult / ParseError / ParseException
+
+- `ParseResult`
+  - `getContext()`：解析后的 `SQLContext`
+  - `getErrors()`：`List<ParseError>`
+  - `hasErrors()`：是否存在错误
+
+- `ParseError`
+  - `stage`：错误阶段（如 `parse-sql`、`convert-statement`）
+  - `sql`：原始 SQL
+  - `statement`：当前子语句（如果可用）
+  - `message`：错误信息
+  - `cause`：原始异常
+
+- `ParseException`
+  - 仅在 strict 模式且存在错误时抛出
+  - 可通过 `getErrors()` 拿到完整错误列表
+
+### Strict 模式示例
+
+```java
+JsqlParser parser = new JsqlParser();
+try {
+    SQLContext context = parser.getSQLContext("select * from t=4", true);
+    System.out.println(context);
+} catch (ParseException e) {
+    e.getErrors().forEach(err ->
+            System.err.println(err.getStage() + " -> " + err.getMessage()));
+}
 ```
 
 ## 输出模型说明
