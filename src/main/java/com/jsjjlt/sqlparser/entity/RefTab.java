@@ -19,14 +19,23 @@ public class RefTab {
 
     public RefTab(String name) {
         if (name.contains("\\.")) {
-            this.name = StringUtils.handleQuoter(name.split("\\.")[1]);
-            this.prefix = StringUtils.handleQuoter(name.split("\\.")[0]);
+            int idx = name.lastIndexOf("\\.");
+            this.name = StringUtils.handleQuoter(name.substring(idx));
+            this.prefix = StringUtils.handleQuoter(name.substring(0, idx));
         } else {
             this.name = StringUtils.handleQuoter(name);
             this.prefix = null;
         }
         this.alias = null;
     }
+
+
+    public RefTab(String prefix, String name) {
+        setPrefix(prefix);
+        setName(name);
+    }
+
+
 
     @Override
     public String toString() {

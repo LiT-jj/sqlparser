@@ -1188,7 +1188,7 @@ public class JsqlParser {
             if (tab == null || tab.getName() == null) {
                 continue;
             }
-            RefTab clean = new RefTab(tab.getPrefix(), tab.getName(), null);
+            RefTab clean = new RefTab(tab.getPrefix(), tab.getName());
             target.addTable(clean);
         }
     }
@@ -1199,7 +1199,7 @@ public class JsqlParser {
         }
         String schema = table.getSchemaName();
         String tableName = table.getName();
-        return new RefTab(sanitizeIdentifier(schema), sanitizeIdentifier(tableName), null);
+        return new RefTab(sanitizeIdentifier(schema), sanitizeIdentifier(tableName));
     }
 
     private String sanitizeIdentifier(String name) {

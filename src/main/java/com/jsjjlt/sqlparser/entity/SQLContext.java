@@ -56,7 +56,7 @@ public class SQLContext {
         if (table == null) {
             return;
         }
-        RefTab refTab = new RefTab(table.getSchemaName(), table.getName(), null);
+        RefTab refTab = new RefTab(table.getSchemaName(), table.getName());
         if (table.getAlias() != null && table.getAlias().getName() != null) {
             refTab.addAlias(table.getAlias().getName());
         }
@@ -246,7 +246,7 @@ public class SQLContext {
             if (column == null || constraint == null) continue;
             RefTab table = column.getPrefix();
             if (table != null && (table.getPrefix() == null || table.getPrefix().isEmpty()) && prefix != null) {
-                table = new RefTab(prefix, table.getName(), null);
+                table = new RefTab(prefix, table.getName());
             }
             TableConstraint tableConstraint = table2constraint.computeIfAbsent(table, TableConstraint::new);
             ColumnConstraint toAdd;

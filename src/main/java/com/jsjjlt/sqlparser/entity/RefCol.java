@@ -38,7 +38,7 @@ public class RefCol {
         } else {
             tableName = prefix;
         }
-        this.prefix = new RefTab(dbName, tableName, null);
+        this.prefix = new RefTab(dbName, tableName);
     }
 
     public void setPrefix(RefTab prefix) {
